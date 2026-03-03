@@ -1,0 +1,59 @@
+﻿@page "/BrowseEvents"
+@using CampusEventApp.Models
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container py-5">
+    <h2 class="fw-bold text-primary mb-4">Upcoming Campus Events</h2>
+
+    @if (events == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading events...</p>
+        </div>
+    }
+    else if (events.Count == 0)
+    {
+        <div class="alert alert-warning">No events found in Database.</div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var ev in events)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <img src="@(string.IsNullOrEmpty(ev.poster) ? "https://via.placeholder.com/300" : ev.poster)" class="card-img-top" style="height: 180px; object-fit: cover;">
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold">@ev.title</h5>
+                            <p class="small text-muted">@ev.date | @ev.location</p>
+                            <button class="btn btn-primary w-100 mt-2" @onclick='() => Nav.NavigateTo($"/EventDetails/{ev.id}")'>View Details</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Event>? events;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var result = await JS.InvokeAsync<List<Event>>("firebaseInterop.GetEvents");
+                events = result ?? new List<Event>();
+            }
+            catch (Exception ex)
+            {
+                events = new List<Event>();
+            }
+            StateHasChanged();
+        }
+    }
+}

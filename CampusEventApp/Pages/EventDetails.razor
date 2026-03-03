@@ -1,0 +1,179 @@
+﻿@page "/EventDetails/{Id}"
+@using CampusEventApp.Models
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container py-4">
+    @if (currentEvent == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading details...</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="d-flex justify-content-center bg-light rounded-top" style="height: 350px; overflow: hidden;">
+                <img src="@currentEvent.poster"
+                     class="img-fluid"
+                     style="max-height: 100%; max-width: 100%; object-fit: contain;"
+                     alt="Event Poster">
+            </div>
+            <div class="card-body">
+                <h2 class="fw-bold">@currentEvent.title</h2>
+                <p class="text-muted">@currentEvent.date | @currentEvent.time | @currentEvent.location</p>
+                <p style="white-space: pre-wrap;">@currentEvent.description</p>
+
+                <hr />
+
+                <div class="bg-light p-4 rounded mb-4 shadow-sm border border-success">
+                    @if (!isRegistered)
+                    {
+                        <h4 class="fw-bold text-success">Register for this Event</h4>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" @bind="regName" class="form-control" placeholder="Your Name" />
+                            </div>
+                            <div class="col-md-5">
+                                <input type="email" @bind="regEmail" class="form-control" placeholder="Your Email" />
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-success w-100 fw-bold" @onclick="HandleRegistration">Register Now</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-2">
+                            <h4 class="fw-bold text-primary">You are Registered for this Event!</h4>
+                            <p class="mb-0 text-muted">Thank you for joining with us.</p>
+                        </div>
+                    }
+                </div>
+
+                <h4 class="fw-bold mb-3">Submit Your Feedback</h4>
+                <div class="card p-4 bg-white border shadow-sm">
+                    @if (isFeedbackSent)
+                    {
+                        <div class="alert alert-success text-center py-3">
+                            <h5 class="fw-bold mb-0">✔ Feedback Sent Successfully!</h5>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="feedbackModel" OnValidSubmit="HandleFeedback">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Your Name</label>
+                                <input type="text" @bind-value="feedbackModel.submittedBy" class="form-control" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Your Email</label>
+                                <input type="email" @bind-value="feedbackModel.email" class="form-control" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Rating</label>
+                                <div class="star-rating">
+                                    <input type="radio" id="star5" name="rating" @onchange="@(() => SetRating(5))" />
+                                    <label for="star5">★</label>
+                                    <input type="radio" id="star4" name="rating" @onchange="@(() => SetRating(4))" />
+                                    <label for="star4">★</label>
+                                    <input type="radio" id="star3" name="rating" @onchange="@(() => SetRating(3))" />
+                                    <label for="star3">★</label>
+                                    <input type="radio" id="star2" name="rating" @onchange="@(() => SetRating(2))" />
+                                    <label for="star2">★</label>
+                                    <input type="radio" id="star1" name="rating" @onchange="@(() => SetRating(1))" />
+                                    <label for="star1">★</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Comment</label>
+                                <textarea @bind="feedbackModel.comment" class="form-control" rows="3"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary fw-bold px-4">Send Feedback</button>
+                        </EditForm>
+                    }
+                </div>
+
+                <button class="btn btn-outline-secondary mt-4" @onclick='() => Nav.NavigateTo("/BrowseEvents")'>Back to Events</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+    private Event? currentEvent;
+    private Feedbacks feedbackModel = new() { rating = 5 };
+    private string regName = "";
+    private string regEmail = "";
+    private bool isRegistered = false;
+    private bool isFeedbackSent = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var allEvents = await JS.InvokeAsync<List<Event>>("firebaseInterop.GetEvents");
+                currentEvent = allEvents.FirstOrDefault(e => e.id == Id);
+                feedbackModel.eventId = Id;
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: " + ex.Message);
+            }
+        }
+    }
+
+    private void SetRating(int value) => feedbackModel.rating = value;
+
+    private async Task HandleRegistration()
+    {
+        if (string.IsNullOrEmpty(regName) || string.IsNullOrEmpty(regEmail))
+        {
+            await JS.InvokeVoidAsync("alert", "Please fill all fields!");
+            return;
+        }
+
+        var regData = new
+        {
+            eventId = Id,
+            eventTitle = currentEvent?.title ?? "N/A",
+            name = regName,
+            email = regEmail
+        };
+
+        bool success = await JS.InvokeAsync<bool>("firebaseInterop.RegisterEvent", regData);
+
+        if (success)
+        {
+            isRegistered = true;
+            regName = "";
+            regEmail = "";
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleFeedback()
+    {
+        feedbackModel.eventTitle = currentEvent?.title ?? "N/A";
+
+        bool success = await JS.InvokeAsync<bool>("firebaseInterop.SaveFeedback", feedbackModel);
+        if (success)
+        {
+            isFeedbackSent = true;
+            StateHasChanged();
+            await Task.Delay(3000);
+            isFeedbackSent = false;
+            feedbackModel = new Feedbacks { eventId = Id, rating = 5 };
+            StateHasChanged();
+        }
+    }
+}

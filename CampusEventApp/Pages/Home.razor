@@ -1,0 +1,56 @@
+﻿@page "/"
+@inject NavigationManager Nav
+
+<div class="container py-5">
+    <div class="p-5 mb-4 bg-dark text-white rounded-5 shadow-lg position-relative overflow-hidden">
+        <div class="container-fluid py-5 position-relative" style="z-index: 2;">
+
+            <h1 class="display-4 fw-bold">Welcome to Campus Event Hub</h1>
+
+            <p class="col-md-8 fs-4 my-4 text-light">Discover, Join, and Experience the best events happening around your campus! All in one place.</p>
+            <button class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow" @onclick="GoToEvents">
+                Explore Events
+            </button>
+        </div>
+        <div class="position-absolute top-0 start-0 w-100 h-100 bg-primary opacity-25"></div>
+    </div>
+
+    <div class="row g-4 mt-5">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 rounded-4 bg-white text-center">
+                <div class="mb-3">
+                    <span class="oi oi-calendar h1 text-primary"></span>
+                </div>
+                <h3 class="fw-bold">Stay Updated</h3>
+                <p class="text-muted">Never miss a guest lecture, workshop, or all events . Get real-time updates.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 rounded-4 bg-white text-center">
+                <div class="mb-3">
+                    <span class="oi oi-people h1 text-success"></span>
+                </div>
+                <h3 class="fw-bold">Connect & Engage</h3>
+                <p class="text-muted">Meet like-minded students and expand your network by participating in clubs.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 rounded-4 bg-white text-center">
+                <div class="mb-3">
+                    <span class="oi oi-star h1 text-warning"></span>
+                </div>
+                <h3 class="fw-bold">Easy Registration For Events</h3>
+                <p class="text-muted">Sign up for your favorite events with just a click. Simple and completely digital.</p>
+            </div>
+        </div>
+    </div>
+
+ 
+</div>
+
+@code {
+    private void GoToEvents() => Nav.NavigateTo("/BrowseEvents");
+  
+}

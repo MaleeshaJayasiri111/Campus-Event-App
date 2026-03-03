@@ -1,0 +1,169 @@
+﻿@page "/ManageEvents"
+@page "/ManageEvents/{Id}"
+@using CampusEventAdmin.Models
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container py-4" style="max-width: 700px;">
+    <div class="card shadow-sm border-0 p-4">
+        <h3 class="fw-bold mb-4 text-center text-primary">
+            @(string.IsNullOrEmpty(Id) ? "Add New Event" : "Update Existing Event")
+        </h3>
+
+        @if (isLoading && !string.IsNullOrEmpty(Id))
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@eventModel" OnValidSubmit="HandleSubmit">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Event Title</label>
+                        <InputText class="form-control" @bind-Value="eventModel.title" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Location</label>
+                        <InputText class="form-control" @bind-Value="eventModel.location" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Organized By</label>
+                        <InputText class="form-control" @bind-Value="eventModel.organizedBy" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Date</label>
+                        <InputText type="date" class="form-control" @bind-Value="eventModel.date" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Time</label>
+                        <InputText type="time" class="form-control" @bind-Value="eventModel.time" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Description</label>
+                        <InputTextArea class="form-control" rows="3" @bind-Value="eventModel.description" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Event Poster</label>
+                        <InputFile OnChange="OnFileChange" class="form-control" />
+                        @if (!string.IsNullOrEmpty(eventModel.poster))
+                        {
+                            <div class="mt-3 text-center border p-2 rounded bg-light">
+                                <img src="@eventModel.poster" class="rounded shadow-sm" style="max-height: 180px;" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-12 mt-4 text-center">
+                        @if (!string.IsNullOrEmpty(statusMessage))
+                        {
+                            <div class="alert alert-success py-2 shadow-sm mb-3">
+                                <strong>✔ @statusMessage</strong>
+                            </div>
+                        }
+
+                        @if (showConfirmDelete)
+                        {
+                            <div class="alert alert-danger p-3 mb-3 shadow-sm border-2">
+                                <p class="mb-3 fw-bold">Are you sure you want to delete this event?</p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button type="button" class="btn btn-danger px-4" @onclick="ConfirmDelete">Yes, Delete</button>
+                                    <button type="button" class="btn btn-secondary px-4" @onclick="() => showConfirmDelete = false">No</button>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn @(showConfirmDelete ? "d-none" : "btn-primary w-100") py-2 fw-bold shadow-sm">
+                                @(string.IsNullOrEmpty(Id) ? "Save Event" : "Update Event Now")
+                            </button>
+
+                            @if (!string.IsNullOrEmpty(Id) && !showConfirmDelete)
+                            {
+                                <button type="button" class="btn btn-danger px-4 shadow-sm" @onclick="() => { statusMessage = string.Empty; showConfirmDelete = true; }">Delete</button>
+                            }
+
+                            <button type="button" class="btn btn-outline-secondary px-4 shadow-sm" @onclick='() => Nav.NavigateTo("/ViewEvents")'>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    private Event eventModel = new();
+    private IBrowserFile? selectedFile;
+    private string statusMessage = "";
+    private bool isLoading = true;
+    private bool showConfirmDelete = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+        {
+            isLoading = true;
+            try
+            {
+                var allEvents = await JS.InvokeAsync<List<Event>>("firebaseInterop.GetEvents");
+                var existing = allEvents?.FirstOrDefault(e => e.id == Id);
+                if (existing != null) { eventModel = existing; }
+            }
+            catch (Exception ex) { Console.WriteLine("Fetch Error: " + ex.Message); }
+            finally { isLoading = false; }
+        }
+        else
+        {
+            eventModel = new Event();
+            isLoading = false;
+        }
+    }
+
+    private void OnFileChange(InputFileChangeEventArgs e) => selectedFile = e.File;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            if (selectedFile != null)
+            {
+                var buffer = new byte[selectedFile.Size];
+                await selectedFile.OpenReadStream(5120000).ReadAsync(buffer);
+                eventModel.poster = $"data:{selectedFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            }
+
+            if (string.IsNullOrEmpty(Id))
+            {
+                await JS.InvokeVoidAsync("firebaseInterop.SaveEvent", eventModel);
+                statusMessage = "Event saved successfully!";
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("firebaseInterop.UpdateEvent", Id, eventModel);
+                statusMessage = "Event updated successfully!";
+            }
+
+            StateHasChanged();
+            await Task.Delay(2000);
+            Nav.NavigateTo("/ViewEvents");
+        }
+        catch (Exception ex) { statusMessage = "Error: " + ex.Message; }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("firebaseInterop.DeleteEvent", Id);
+            showConfirmDelete = false;
+            statusMessage = "Event deleted successfully!";
+            StateHasChanged();
+            await Task.Delay(2000);
+            Nav.NavigateTo("/ViewEvents");
+        }
+        catch (Exception ex) { statusMessage = "Delete Error: " + ex.Message; }
+    }
+}

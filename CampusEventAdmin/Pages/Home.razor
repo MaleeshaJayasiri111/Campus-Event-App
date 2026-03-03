@@ -1,0 +1,86 @@
+﻿@page "/Home"
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@using CampusEventAdmin.Models
+
+<div class="container-fluid px-4 py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">Admin Dashboard</h2>
+        <span class="badge bg-info text-dark p-2">Logged in as Admin</span>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-primary text-white h-100 p-3" @onclick='() => Nav.NavigateTo("/ViewEvents")' style="cursor:pointer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase mb-1" style="font-size: 0.8rem; opacity: 0.8;">Total Events</h6>
+                        <h3 class="mb-0 fw-bold">Manage</h3>
+                    </div>
+                    <i class="bi bi-calendar-event fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-success text-white h-100 p-3" @onclick='() => Nav.NavigateTo("/ManageEvents")' style="cursor:pointer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase mb-1" style="font-size: 0.8rem; opacity: 0.8;">New Content</h6>
+                        <h3 class="mb-0 fw-bold">Add Event</h3>
+                    </div>
+                    <i class="bi bi-plus-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark h-100 p-3" @onclick='() => Nav.NavigateTo("/ViewFeedbacks")' style="cursor:pointer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase mb-1" style="font-size: 0.8rem; opacity: 0.8;">Feedback</h6>
+                        <h3 class="mb-0 fw-bold">Review</h3>
+                    </div>
+                    <i class="bi bi-chat-left-text fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm bg-dark text-white h-100 p-3" @onclick='() => Nav.NavigateTo("/RegisteredUsers")' style="cursor:pointer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase mb-1" style="font-size: 0.8rem; opacity: 0.8;">Users</h6>
+                        <h3 class="mb-0 fw-bold">System</h3>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <h4 class="fw-bold mb-3 text-dark">Welcome back, Administrator</h4>
+                <p class="text-muted">You have full control over the Campus Event platform. Use the tools above or the sidebar navigation to manage upcoming events, view student feedback, and other settings efficiently.</p>
+                <hr />
+                <div class="d-flex gap-3">
+                    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/ViewEvents")'>View All Events</button>
+                    <button class="btn btn-outline-secondary" @onclick='() => Nav.NavigateTo("/ManageEvents")'>Create New Event</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await JS.InvokeAsync<object>("firebaseAuth.getUser");
+        if (user == null)
+        {
+            Nav.NavigateTo("/", true);
+        }
+    }
+}

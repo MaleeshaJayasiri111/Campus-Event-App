@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Event App</title>
+    <base href="/" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="CampusEventApp.styles.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyCg_7N1gy3KouJkCIYTqhRfNNs-nio3aAM",
+            authDomain: "campuseventapp-45145.firebaseapp.com",
+            projectId: "campuseventapp-45145",
+            storageBucket: "campuseventapp-45145.firebasestorage.app",
+            messagingSenderId: "68712165143",
+            appId: "1:68712165143:web:cc6befc94a1157ff1b1152",
+            measurementId: "G-8V8N8593QP"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+
+        window.firebaseInterop = {
+            GetEvents: async function () {
+                try {
+                    const querySnapshot = await db.collection("events").get();
+                    const events = [];
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        events.push({
+                            id: doc.id,
+                            title: data.title || "",
+                            date: data.date || "",
+                            time: data.time || "",
+                            location: data.location || "",
+                            organizedBy: data.organizedBy || "",
+                            description: data.description || "",
+                            poster: data.poster || ""
+                        });
+                    });
+                    return events;
+                } catch (error) {
+                    console.error("Firebase Error: ", error);
+                    return [];
+                }
+            },
+            SaveFeedback: async function (feedback) {
+                try {
+                    await db.collection("feedbacks").add(feedback);
+                    return true;
+                } catch (error) {
+                    console.error("Feedback Error: ", error);
+                    return false;
+                }
+            },
+            RegisterEvent: async function (regData) {
+                try {
+                    await db.collection("registrations").add(regData);
+                    return true;
+                } catch (error) {
+                    console.error("Registration Error: ", error);
+                    return false;
+                }
+            }
+        }; 
+    </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Campus Event-Admin</a>
+    </div>
+</div>
+
+<div class="flex-column">
+    <nav class="flex-column">
+        @if (isLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="Home">
+                    <span class="bi bi-list-nested"></span> Home
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ViewEvents">
+                    <span class="bi bi-list-nested"></span> Our Events
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ManageEvents">
+                    <span class="bi bi-plus-square"></span> Add New Event
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="RegisteredUsers">
+                    <span class="bi bi-plus-square"></span> Registered Students
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="ViewFeedbacks">
+                    <span class="bi bi-plus-square"></span> Feedbacks
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" @onclick="HandleLogout" style="cursor:pointer">
+                    <span class="bi bi-box-arrow-right"></span> Logout
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private bool isLoggedIn = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await JS.InvokeAsync<object>("firebaseAuth.getUser");
+        isLoggedIn = (user != null);
+    }
+
+    private async Task HandleLogout()
+    {
+        await JS.InvokeVoidAsync("firebaseAuth.signOut");
+        isLoggedIn = false;
+        Nav.NavigateTo("/", true);
+    }
+}

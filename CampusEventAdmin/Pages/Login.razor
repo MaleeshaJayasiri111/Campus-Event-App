@@ -1,0 +1,68 @@
+﻿@page "/"
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container mt-5" style="max-width: 400px;">
+    <div class="card shadow p-4">
+        <h3 class="text-center mb-4">Admin Login</h3>
+        <div class="mb-3">
+            <input @bind="email" class="form-control" placeholder="Admin Email" />
+        </div>
+        <div class="mb-3">
+            <input @bind="password" type="password" class="form-control" placeholder="Password" />
+        </div>
+
+        <button class="btn btn-primary w-100" @onclick="HandleLogin">Sign In</button>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            var alertClass = error.Contains("Successful") ? "alert-success" : "alert-danger";
+            <div class="alert @alertClass mt-3 text-center" role="alert" style="font-size: 0.9rem;">
+                @error
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string error = "";
+
+    public class AuthResult { public bool success { get; set; } public string Error { get; set; } }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            error = "";
+            var result = await JS.InvokeAsync<AuthResult>("firebaseAuth.signIn", email, password);
+
+            if (result.success)
+            {
+                error = "Login Successful! Welcome Admin.";
+                StateHasChanged();
+                await Task.Delay(1500);
+                Nav.NavigateTo("/Home", forceLoad: true);
+            }
+            else
+            {
+
+                error = "Invalid Email or Password. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = "An error occurred during login.";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await JS.InvokeAsync<object>("firebaseAuth.getUser");
+        if (user != null)
+        {
+            Nav.NavigateTo("/Home");
+        }
+    }
+}

@@ -1,0 +1,111 @@
+﻿@page "/SubmitFeedbacks"
+@using CampusEventApp.Models
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container py-4">
+    <h3 class="fw-bold mb-4">Submit Your Feedback</h3>
+
+    <div class="card p-4 shadow-sm border-0">
+        @if (isFeedbackSent)
+        {
+            <div class="alert alert-success text-center py-4">
+                <h4 class="fw-bold">✔ Feedback submitted successfully!</h4>
+                <p>Redirecting to events...</p>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="@feedback" OnValidSubmit="HandleFeedback">
+                <div class="mb-3">
+                    <label class="form-label">Your Name</label>
+                    <InputText @bind-Value="feedback.submittedBy" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Your Email</label>
+                    <InputText @bind-Value="feedback.email" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold">Select Event</label>
+                    <select @bind="feedback.eventId" class="form-control" required>
+                        <option value="">-- Select an Event --</option>
+                        @if (allEvents != null)
+                        {
+                            @foreach (var ev in allEvents)
+                            {
+                                <option value="@ev.id">@ev.title</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label>Rating:</label>
+                    <div>
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            int score = i;
+                            <span style="cursor:pointer; font-size: 2.5rem; color: @(feedback.rating >= score ? "#ffc107" : "#e4e5e9")"
+                                  @onclick="() => feedback.rating = score">★</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Your Comment</label>
+                    <InputTextArea @bind-Value="feedback.comment" class="form-control" rows="3" required />
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100 fw-bold">Send Feedback</button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Event> allEvents = new();
+    Feedbacks feedback = new Feedbacks() { rating = 5 };
+    private bool isFeedbackSent = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadEvents();
+        }
+    }
+
+    private async Task LoadEvents()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<List<Event>>("firebaseInterop.GetEvents");
+            if (result != null)
+            {
+                allEvents = result;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+
+    async Task HandleFeedback()
+    {
+        var selectedEvent = allEvents.FirstOrDefault(e => e.id == feedback.eventId);
+        feedback.eventTitle = selectedEvent?.title ?? "N/A";
+
+        bool success = await JS.InvokeAsync<bool>("firebaseInterop.SaveFeedback", feedback);
+        if (success)
+        {
+            isFeedbackSent = true;
+            StateHasChanged();
+            await Task.Delay(2000);
+            Nav.NavigateTo("/BrowseEvents");
+        }
+    }
+}

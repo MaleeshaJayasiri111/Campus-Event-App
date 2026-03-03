@@ -1,0 +1,91 @@
+﻿@page "/RegisteredUsers"
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">Registered Users</h2>
+        <button class="btn btn-sm btn-outline-secondary" @onclick='() => Nav.NavigateTo("/Home")'>Back</button>
+    </div>
+
+    @if (users == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading user data...</p>
+        </div>
+    }
+    else if (!users.Any())
+    {
+        <div class="alert alert-info border-0 shadow-sm">No registered users found.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Student Name</th>
+                            <th>Email Address</th>
+                            <th>Event Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in users)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold">@u.name</td>
+                                <td>@u.email</td>
+                                <td><span class="text-primary fw-semibold">@u.eventTitle</span></td>
+                                <td>
+                                    <span class="badge bg-primary">Registered</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<UserModel>? users;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadUsers();
+        }
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var user = await JS.InvokeAsync<object>("firebaseAuth.getUser");
+            if (user == null)
+            {
+                Nav.NavigateTo("/", true);
+                return;
+            }
+
+            users = await JS.InvokeAsync<List<UserModel>>("firebaseInterop.GetUsers");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }
+
+    public class UserModel
+    {
+        public string name { get; set; } = "";
+        public string email { get; set; } = "";
+        public string eventTitle { get; set; } = "";
+    }
+}
